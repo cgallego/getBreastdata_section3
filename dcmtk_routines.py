@@ -16,7 +16,6 @@ import glob ##Unix style pathname pattern expansion
 import time
 import re
 import shlex, subprocess
-from dictionaries import my_aet, data_loc
 
 '''
 -----------------------------------------------------------
@@ -48,7 +47,7 @@ usage:     import dcmtk_routines
 % Sept 18/12 - Added additional options for retrieving only specific sequences (e.g T1 or T2)
 % Nov 13/13 - Added all functionality in on module
 % Apr 05/2016 - Added section3 datamining support
-
+-----------------------------------------------------------
 '''
 
 def get_only_filesindirectory(mydir):
@@ -799,7 +798,7 @@ def pull_MRI_MARTELold(data_loc, my_aet, remote_aet, remote_port, remote_IP, loc
     ########## END PULL #######################################
     return
     
-def check_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, clinical_IP, local_port, PatientID, StudyID, AccessionN):
+def check_pacs(path_rootFolder, data_loc, my_aet, clinical_aet, clinical_port, clinical_IP, StudyID, AccessionN):
     
     os.chdir(path_rootFolder)
     
@@ -807,57 +806,77 @@ def check_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, c
     if not os.path.exists(path_rootFolder+os.sep+'querydata'):
         os.makedirs(path_rootFolder+os.sep+'querydata')
         
-    print '\n--------- QUERY Suject (MRN): "' + PatientID + '" in "' + clinical_aet + '" from "'+ my_aet + '" ----------'
+    print '\n--------- QUERY Suject (CADstudyID): "' + StudyID + '" in "' + clinical_aet + '" from "'+ my_aet + '" ----------'
 
     cmd = 'findscu -v -S -k 0009,1002="" -k 0008,1030="" -k 0008,103e="" -k 0010,0010="" -k 0010,0020="" \
-            -k 0008,0020="" -k 0008,0050='+AccessionN+' -k 0020,0011="" -k 0008,0052="SERIES" \
+            -k 0008,0020="" -k 0008,0050='+AccessionN+' -k 0020,0011="" -k 0008,0052="STUDY" \
             -k 0020,000D="" -k 0020,000e="" -k 0020,1002="" -k 0008,0070="" -aet ' + my_aet + \
-    ' -aec ' + clinical_aet + ' ' + clinical_IP + ' ' + clinical_port + ' >  querydata/'+PatientID+'_querydata_'+AccessionN+'.txt'     #142.76.62.102
+    ' -aec ' + clinical_aet + ' ' + clinical_IP + ' ' + clinical_port + ' >  querydata/'+StudyID+'_querydata_'+AccessionN+'.txt'     #142.76.62.102
 
-            
-    cmd = 'findscu -v -P -k 0008,1030="" -k 0008,103e="" -k 0010,0010="" -k 0010,0020="' + PatientID + 'SHSC*''"\
-    -k 0008,1030="" -k 0008,0052="STUDY" -k 0008,0020="" -k 0020,0010="" -k 0008,0050="*" \
-    -k 0008,0060="" -k 0020,0011="" -k 0020,000D= -k 0020,1002="" -aet ' + my_aet + \
-    ' -aec ' + clinical_aet + ' ' + clinical_IP + ' ' + clinical_port + ' >  querydata/'+PatientID+'_querydata_'+AccessionN+'.txt'     #142.76.62.102
+#    cmd = 'findscu -v -P -k 0008,1030="" -k 0008,103e="" -k 0010,0010="" -k 0010,0020="' + PatientID + 'SHSC*''"\
+#    -k 0008,1030="" -k 0008,0052="STUDY" -k 0008,0020="" -k 0020,0010="" -k 0008,0050="*" \
+#    -k 0008,0060="" -k 0020,0011="" -k 0020,000D= -k 0020,1002="" -aet ' + my_aet + \
+#    ' -aec ' + clinical_aet + ' ' + clinical_IP + ' ' + clinical_port + ' > querydata/'+PatientID+'_querydata_'+AccessionN+'.txt'     #142.76.62.102
 
-    print '\n---- Begin query with ' + clinical_aet + ' by PatientID ....' ;
+
+    print '\n---- Begin query with ' + clinical_aet + ' by StudyID ....' ;
     print "cmd -> " + cmd
     p1 = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
     p1.wait()
 
-    readQueryFile1 = open( 'querydata/'+PatientID+'_querydata_'+AccessionN+'.txt', 'r')
+    readQueryFile1 = open( 'querydata/'+StudyID+'_querydata_'+AccessionN+'.txt', 'r')
     readQueryFile1.seek(0)
     line = readQueryFile1.readline()
-    ListOfSeries = []
+    print '---------------------------------------'
+    ListOfExams = []
+    
     while ( line ) : # readQueryFile1.readlines()):
+        # found instance of exam
         #print line
         if '(0008,0020) DA [' in line: #(0020,000d) UI
             lineStudyDate = line
             item = lineStudyDate
             pullStudyDate = item[item.find('[')+1:item.find(']')]
 
-            nextline =  readQueryFile1.readline(),
+            nextline =  readQueryFile1.readline()
 
-            if '(0008,0050) SH' in nextline[0]:    # Filters by Modality MR
-                item = nextline[0]
+            if '(0008,0050) SH' in nextline:    # Filters by Modality MR
+                item = nextline
                 newAccessionN = item[item.find('[')+1:item.find(']')]
 
-            nextline =  readQueryFile1.readline(),
-            while ( '(0008,1030) LO' not in nextline[0]) : #(0008,1030) LO
-                nextline = readQueryFile1.readline(),
+            while ( 'StudyDescription' not in nextline) : #(0008,1030) LO
+                nextline = readQueryFile1.readline()
 
-            item = nextline[0]
+            item = nextline
             pullExamsDescriptions = item[item.find('[')+1:item.find(']')]
             print 'MRStudyDate => ' + pullStudyDate
             print 'newAccessionNumber => ' + newAccessionN
             print 'pullExamsDescriptions => ' + pullExamsDescriptions
+            
+            while ( 'PatientID' not in nextline) : #(0008,1030) LO
+                nextline = readQueryFile1.readline()
+                
+            item = nextline
+            pullPatientID = item[item.find('[')+1:item.find(']')]
+            # eg. '772737SHSC' remove SHSC
+            PatientID = pullPatientID[:-4]
+            print 'pullPatientID => ' + pullPatientID
+            print 'PatientID => ' + PatientID
+            
+            while ( 'StudyInstanceUID' not in nextline) : #(0020,000d) UI
+                nextline = readQueryFile1.readline()
+
+            item = nextline
+            pullStudyUID = item[item.find('[')+1:item.find(']')]
+            print 'pullStudyUID => ' + pullStudyUID
+            print '\n'
 
             '''---------------------------------------'''
-            ListOfSeries.append([pullStudyDate, newAccessionN, pullExamsDescriptions])
+            ListOfExams.append([pullStudyDate, newAccessionN, pullExamsDescriptions, pullStudyUID])
             line = readQueryFile1.readline()
         else:
             line = readQueryFile1.readline()
-            
+
     readQueryFile1.close()
     
     #################################################
@@ -866,7 +885,7 @@ def check_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, c
     #################################################
     iExamPair=[]
     flagfound = 1
-    for iExamPair in ListOfSeries: # iExamID, iExamUID in ListOfExamsUID: #
+    for iExamPair in ListOfExams: # iExamID, iExamUID in ListOfExamsUID: #
         SelectedAccessionN = iExamPair[1]
         str_count = '';
 
@@ -882,39 +901,41 @@ def check_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, c
         print 'Accession number Not found in '+clinical_aet+'- Abort'
         print "\n===============\n"
         fil=open('outcome/Errors_findscu_AS0SUNB.txt','a+')
-        fil.write(PatientID+'\t'+StudyID+'\t'+str(AccessionN)+'\tAccession number found in '+clinical_aet+'\n')
+        fil.write(StudyID+'\t'+StudyID+'\t'+str(AccessionN)+'\tAccession number found in '+clinical_aet+'\n')
         fil.close()
-        sys.exit()
+        #sys.exit()
 
-    return
+    return flagfound
 
-def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, clinical_IP, local_port, PatientID, StudyID, AccessionN):
+def pull_pacs(path_rootFolder, data_loc, hostID, my_aet, clinical_aet, clinical_port, clinical_IP, local_port, StudyID, AccessionN):
         
-    os.chdir(data_loc)
+    os.chdir(path_rootFolder)
     print 'EXECUTE DICOM/Archive Commands ...'
     print 'Query,  Pull,  Anonymize, Push ...'
 
-    print '\n--------- QUERY Suject (MRN): "' + PatientID + '" in "' + clinical_aet + '" from "'+ my_aet + '" ----------'
+    print '\n--------- QUERY Suject (MRN): "' + StudyID + '" in "' + clinical_aet + '" from "'+ my_aet + '" ----------'
 
-    cmd = 'findscu -v -P -k 0008,1030="" -k 0008,103e="" -k 0010,0010="" -k 0010,0020="' + PatientID + 'SHSC*''"\
-    -k 0008,1030="" -k 0008,0052="STUDY" -k 0008,0020="" -k 0020,0010="" -k 0008,0050="*" \
-    -k 0008,0060="" -k 0020,0011="" -k 0020,000D= -k 0020,1002="" -aet ' + my_aet + \
-    ' -aec ' + clinical_aet + ' ' + clinical_IP + ' ' + clinical_port + ' > querydata/'+PatientID+'_querydata_'+AccessionN+'.txt'     #142.76.62.102
+    cmd = 'findscu -v -S -k 0009,1002="" -k 0008,1030="" -k 0008,103e="" -k 0010,0010="" -k 0010,0020="" \
+            -k 0008,0020="" -k 0008,0050='+AccessionN+' -k 0020,0011="" -k 0008,0052="STUDY" \
+            -k 0020,000D="" -k 0020,000e="" -k 0020,1002="" -k 0008,0070="" -aet ' + my_aet + \
+    ' -aec ' + clinical_aet + ' ' + clinical_IP + ' ' + clinical_port + ' >  querydata/'+StudyID+'_querydata_'+AccessionN+'.txt'     #142.76.62.102
+
+#    cmd = 'findscu -v -P -k 0008,1030="" -k 0008,103e="" -k 0010,0010="" -k 0010,0020="' + PatientID + 'SHSC*''"\
+#    -k 0008,1030="" -k 0008,0052="STUDY" -k 0008,0020="" -k 0020,0010="" -k 0008,0050="*" \
+#    -k 0008,0060="" -k 0020,0011="" -k 0020,000D= -k 0020,1002="" -aet ' + my_aet + \
+#    ' -aec ' + clinical_aet + ' ' + clinical_IP + ' ' + clinical_port + ' > querydata/'+PatientID+'_querydata_'+AccessionN+'.txt'     #142.76.62.102
 
     print '\n---- Begin query with ' + clinical_aet + ' by PatientID ....' ;
     print "cmd -> " + cmd
     p1 = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
     p1.wait()
 
-    readQueryFile1 = open( 'querydata/'+PatientID+'_querydata_'+AccessionN+'.txt', 'r')
+    readQueryFile1 = open( 'querydata/'+StudyID+'_querydata_'+AccessionN+'.txt', 'r')
     readQueryFile1.seek(0)
     line = readQueryFile1.readline()
     print '---------------------------------------'
     ListOfExams = []
-    ListOfExamsUID = [] ;
-    ListOfExamsID = []
-    ListOfExamsDescriptions = []
-    ListOfExamDates = []
+    
     while ( line ) : # readQueryFile1.readlines()):
         # found instance of exam
         #print line
@@ -923,30 +944,35 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
             item = lineStudyDate
             pullStudyDate = item[item.find('[')+1:item.find(']')]
 
-            nextline =  readQueryFile1.readline(),
+            nextline =  readQueryFile1.readline()
 
-            if '(0008,0050) SH' in nextline[0]:    # Filters by Modality MR
-                item = nextline[0]
+            if '(0008,0050) SH' in nextline:    # Filters by Modality MR
+                item = nextline
                 newAccessionN = item[item.find('[')+1:item.find(']')]
 
-        if '(0008,0060) CS [MR]' in line:    # Filters by Modality MR
-            '''---------------------------------------'''
-            nextline =  readQueryFile1.readline(),
-            while ( 'StudyDescription' not in nextline[0]) : #(0008,1030) LO
-                nextline = readQueryFile1.readline(),
+            while ( 'StudyDescription' not in nextline) : #(0008,1030) LO
+                nextline = readQueryFile1.readline()
 
-            item = nextline[0]
+            item = nextline
             pullExamsDescriptions = item[item.find('[')+1:item.find(']')]
             print 'MRStudyDate => ' + pullStudyDate
             print 'newAccessionNumber => ' + newAccessionN
             print 'pullExamsDescriptions => ' + pullExamsDescriptions
+            
+            while ( 'PatientID' not in nextline) : #(0008,1030) LO
+                nextline = readQueryFile1.readline()
+                
+            item = nextline
+            pullPatientID = item[item.find('[')+1:item.find(']')]
+            # eg. '772737SHSC' remove SHSC
+            PatientID = pullPatientID[:-4]
+            print 'pullPatientID => ' + pullPatientID
+            print 'PatientID => ' + PatientID
+            
+            while ( 'StudyInstanceUID' not in nextline) : #(0020,000d) UI
+                nextline = readQueryFile1.readline()
 
-            '''---------------------------------------'''
-            nextline = readQueryFile1.readline(),
-            while ( 'StudyInstanceUID' not in nextline[0]) : #(0020,000d) UI
-                nextline = readQueryFile1.readline(),
-
-            item = nextline[0]
+            item = nextline
             pullStudyUID = item[item.find('[')+1:item.find(']')]
             print 'pullStudyUID => ' + pullStudyUID
             print '\n'
@@ -958,7 +984,7 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
             line = readQueryFile1.readline()
 
     readQueryFile1.close()
-    #print ListOfExams
+
 
     #################################################
     # Added: User input to pull specific Exam by Accession
@@ -1008,7 +1034,7 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
     if not os.path.exists(str(AccessionN)):
         os.makedirs(str(AccessionN))
 
-    os.chdir(str(data_loc))
+    os.chdir(str(path_rootFolder))
 
     #################################################
     # 2nd-Part: # Required for pulling images.
@@ -1050,15 +1076,14 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
     print 'Begin dump to dcm ....' ;
     os.system(cmd)
     print 'outcome/RetrieveExam.dcm is formed for pulling image from remote_aet.'
-    
 
     # Now Create a subfolder : AccessionN to pull images .
-    os.chdir(img_folder+os.sep+str(StudyID)+os.sep+str(AccessionN))
+    os.chdir(data_loc+os.sep+str(StudyID)+os.sep+str(AccessionN))
 
     ########## START PULL #######################################
     print 'Pulling images to cwd: ' + os.getcwd()
-    cmd = data_loc+'/movescu -P +P ' + local_port + ' -aem ' + my_aet + ' -aet ' + my_aet + ' -aec ' + clinical_aet \
-    + ' ' + clinical_IP + ' ' + clinical_port + ' ' + data_loc+'/outcome/RetrieveExam.dcm '
+    cmd = path_rootFolder+'/movescu -P +P ' + local_port + ' -aem ' + my_aet + ' -aet ' + my_aet + ' -aec ' + clinical_aet \
+    + ' ' + clinical_IP + ' ' + clinical_port + ' ' + path_rootFolder+'/outcome/RetrieveExam.dcm '
 
     print 'cmd -> ' + cmd
     p1 = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
@@ -1066,7 +1091,7 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
     ########## END PULL #######################################
 
     print 'Next, to group "raw" image files into a hierarchical. ...'
-    imagepath = img_folder+os.sep+str(StudyID)+os.sep+str(AccessionN) + '\\MR*.*'
+    imagepath = data_loc+os.sep+str(StudyID)+os.sep+str(AccessionN) + '\\MR*.*'
     print 'imagepath: ', imagepath
 
     #################################################################
@@ -1075,7 +1100,7 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
     # (0010,0010),PatientName/ID                                    #
     # (0012,0021),"BRCA1F"  (0012,0040),StudyNo                     #
     ###########################################
-    os.chdir(str(data_loc))
+    os.chdir(str(path_rootFolder))
     
     # Group all image files into a number of series for StudyUID/SeriesUID generation.
     cmd = 'dcmdump +f -L +F +P "0020,000e" +P "0020,0011" "' + imagepath + '" > outcome/pulledDicomFiles.txt'
@@ -1084,21 +1109,21 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
     p1 = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
     p1.wait()
     
-    readPulledFiles = open('outcome/pulledDicomFiles.txt', 'r')
+#    cmd = 'dcmdump +f -L +F +P "0020,000e" +P "0008,103e" "' + imagepath + '" > outcome/descripPulledDicomFiles.txt'
+#    print 'cmd -> ' + cmd
+#    print 'Begin SortPulledDicom ....' ;
+#    p2 = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
+#    p2.wait()
     
-    cmd = 'dcmdump +f -L +F +P "0020,000e" +P "0008,103e" "' + imagepath + '" > outcome/descripPulledDicomFiles_'+str(StudyID)+'.txt'
-    print 'cmd -> ' + cmd
-    print 'Begin SortPulledDicom ....' ;
-    p2 = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
-    p2.wait()
+    readPulledFiles = open('outcome/pulledDicomFiles.txt', 'r')
     
     print '---------------------------------------'
     ListOfSeriesGroup    = [] ; # [SeriesNo, SeriesUID] # SeriesNumber
     ListOfSeriesGroupRev = [] ; # [SeriesUID, SeriesNo]
     ListOfSeriesPairs    = [] ; # [imageFn, SeriesUID]
-    #ListOfExamsID = []
     outlines = ""
     nextline = readPulledFiles.readline()
+    
     while ( nextline ) : # readPulledFiles.readlines()):
         if 'dcmdump' in nextline:   #Modality
             item = nextline; #[0]
@@ -1123,14 +1148,6 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
     readPulledFiles.close()
 
     print "\n************************************************"
-    #print 'ListOfSeriesGroup'
-    #print ListOfSeriesGroup
-
-    #print 'ListOfSeriesGroup'
-    #ListOfSeriesGroupRev
-
-    #print 'ListOfSeriesGroup'
-    #ListOfSeriesPairs
 
     # Make a compact dictionary for {ListOfSeriesGroup}.
     ListOfSeriesGroupUnique = dict(ListOfSeriesGroup) #ListOfSeriesGroup:
@@ -1188,7 +1205,8 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
     # (0010,0010),PatientName/ID                                    #
     # (0012,0021),"BRCA1F"  (0012,0040),StudyNo                     #
     #################################################################
-    os.chdir(str(imagepath))
+    imagepath = str(data_loc+os.sep+str(StudyID)+os.sep+str(AccessionN) )
+    os.chdir(imagepath)
     print 'Anonymize images at cwd: ' + os.getcwd()
 
     # Make anonymized UID.
@@ -1218,13 +1236,13 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
         print 'key -> ', v, '\t', 'anonySeriesUID->', anonySeriesUID, # '\n' '\t\t\t', k
 
         for SeriesPair in ListOfSeriesPairs:
-            print SeriesPair
+            #print SeriesPair
             if SeriesPair[1] == k: # v:
                 #print SeriesPair[1], '\t\t', v #, '\n' ###[0], '\t\t', k #, '\n'
                 imagefList.append(SeriesPair[0])
-                cmd = data_loc+'/dcmodify -gin -m "(0020,000D)=' + anonyStudyUID + '" -m "(0020,000e)=' + anonySeriesUID + '" \
+                cmd = path_rootFolder+'/dcmodify -gin -m "(0020,000D)=' + anonyStudyUID + '" -m "(0020,000e)=' + anonySeriesUID + '" \
                 -m "(0010,0010)=' + aPatientName + '" -m "(0010,0020)=' + aPatientID +'" \
-                -i "(0012,0021)=BRCA1F" -i "(0012,0040)=' + ClinicTrialNo + '" ' + SeriesPair[0] + ' > ' +data_loc+'/outcome/dcmodifiedPulledDicomFiles.txt'
+                -i "(0012,0021)=BRCA1F" -i "(0012,0040)=' + ClinicTrialNo + '" ' + SeriesPair[0] + ' > ' +path_rootFolder+'/outcome/dcmodifiedPulledDicomFiles.txt'
                 lines = os.system(cmd)
 
         print '(', len(imagefList), ' images are anonymized.)'
@@ -1254,22 +1272,22 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
     print 'imagepath: ', imagepath
 
     #########################################
-    os.chdir(str(data_loc))
+    os.chdir(str(path_rootFolder))
 
     # Group all image files into a number of series for StudyUID/SeriesUID generation.
     cmd = 'dcmdump +f -L +F +P "0020,000e" +P "0020,0011" "' + imagepath + '" > outcome/anonyPulledDicomFiles.txt'
     print 'cmd -> ' + cmd
     print 'Begin SortAnonyDicom ....' ;
-    lines = os.system(cmd)
+    os.system(cmd)
 
     ##########################################################################
     # 5-Part: Last part added when dealing with local pulls and NOT PUSHES.  #
     # This part will arrange individual images into folders by Series   #
     # Creates a folder for each series                                     #
     ##########################################################################
-    readPulledSortedFiles = open('outcome/descripPulledDicomFiles_'+str(StudyID)+'.txt', 'r')
+    readPulledSortedFiles = open('outcome/pulledDicomFiles.txt', 'r')
     
-    #'---------------------------------------'
+    #'---------------------------------------
     os.chdir(imagepath)
     nextline = readPulledSortedFiles.readline()
     while ( nextline ) : # readPulledFiles.readlines()):
@@ -1280,21 +1298,16 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
 
             nextline = readPulledSortedFiles.readline() # ( 'SeriesNumber' : #(0020,0011) IS
             item = nextline; #[0]
-            SeriesDes = item[item.find('[')+1:item.find(']')]
-            #print SeriesDes
-            ch = re.compile('/')
-            SeriesDes = ch.sub('-', SeriesDes)
+            SeriesNumber = item[item.find('[')+1:item.find(']')]
 
             nextline =  readPulledSortedFiles.readline() # ( 'SeriesInstanceUID' :    #(0020,000e) SH
             item = nextline; #[0]
             SeriesUID = item[item.find('[')+1:item.find(']')]
             
-            #---------------------------------------
-            if not(os.path.exists(imagepath+'/'+SeriesDes)):
-                os.mkdir(imagepath+'/'+SeriesDes)
+            if not(os.path.exists(SeriesNumber)):
+                os.mkdir(SeriesNumber)
             
-            mv_subp = subprocess.Popen(['mv', imageFn, SeriesDes], stdout=subprocess.PIPE)
-            mv_subp.wait()
+            l=shutil.move(imageFn, SeriesNumber)
             #---------------------------------------
             nextline = readPulledSortedFiles.readline()
         else:
@@ -1303,5 +1316,153 @@ def pull_pacs(path_rootFolder, data_loc, hostID, clinical_aet, clinical_port, cl
     readPulledSortedFiles.close()
 
     print "\n************************************************"
-   
-    return
+    # Now post-process series
+    [selListOfSeriesID, selListOfSeriesDescription] = post_parse_series(path_rootFolder, data_loc, StudyID, AccessionN, my_aet, clinical_aet, clinical_IP, clinical_port)    
+    
+    return selListOfSeriesID, selListOfSeriesDescription
+    
+    
+def post_parse_series(path_rootFolder, data_loc, StudyID, AccessionN, my_aet, clinical_aet, clinical_IP, clinical_port):
+    
+    os.chdir(path_rootFolder)    
+    cmd = 'findscu -v -S -k 0009,1002="" -k 0008,1030="" -k 0008,103e="" -k 0010,0010="" -k 0010,0020="" \
+            -k 0008,0020="" -k 0008,0050='+AccessionN+' -k 0020,0011="" -k 0008,0052="SERIES" \
+            -k 0020,000D="" -k 0020,000e="" -k 0020,1002="" -k 0008,0070="" -aet ' + my_aet + \
+    ' -aec ' + clinical_aet + ' ' + clinical_IP + ' ' + clinical_port + ' >  querydata/'+StudyID+'_querydata_'+AccessionN+'.txt'     #142.76.62.102
+
+    print '\n---- Begin query with ' + clinical_aet
+    print "cmd -> " + cmd
+    p1 = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
+    p1.wait()
+    
+    #################################################
+    # 2nd-Part: # Required for pulling images.
+    # Added by Cristina Gallego. July 2013
+    ################################################
+    imagepath = str(data_loc)+os.sep+str(StudyID)+os.sep+str(AccessionN)
+    print 'imagepath: ', imagepath
+
+    #################################################
+    # Check accession file that exists
+    readQueryFile1 = open('querydata/'+StudyID+'_querydata_'+AccessionN+'.txt', 'r')
+    readQueryFile1.seek(0)
+    line = readQueryFile1.readline()
+    ListOfExamsUID = []  
+    ListOfSeriesUID = []
+    ListOfSeriesID = []
+    ListOfSeriesDescription = []
+    count = 0
+    match = 0
+    
+    # write output to file sout
+    seriesout =  imagepath+'_seriesStudy.txt'
+    sout = open(seriesout, 'a')
+    
+    while ( line ) : 
+        if '(0008,0020) DA [' in line:    #SerieDate
+            item = line
+            exam_date = item[item.find('[')+1:item.find(']')]        
+            #print 'exam_date => ' + exam_date    
+            line = readQueryFile1.readline()
+            
+        elif '(0010,0020) LO [' in line:    #patient_id
+            item = line
+            patient_id = item[item.find('[')+1:item.find(']')]        
+            #print 'patient_id => ' + patient_id    
+            line = readQueryFile1.readline()
+            
+        elif '(0010,0010) PN [' in line:    #patient_name
+            item = line
+            patient_name = item[item.find('[')+1:item.find(']')] # this need to be anonymized
+            patient_name = "AnonName"
+            #print 'patient_name => ' + patient_name    
+            line = readQueryFile1.readline()
+            
+        elif '(0008,1030) LO [' in line:    #exam_description
+            item = line
+            exam_description = item[item.find('[')+1:item.find(']')]        
+            #print 'exam_description => ' + exam_description
+            line = readQueryFile1.readline()
+            
+        elif '(0020,000d) UI [' in line:    #exam_uid
+            item = line
+            exam_uid = item[item.find('[')+1:item.find(']')]        
+            #print 'exam_uid => ' + exam_uid    
+            ListOfExamsUID.append(exam_uid)
+            line = readQueryFile1.readline()
+            
+        elif '(0008,0050) SH [' in line:    #exam_number
+            item = line
+            accession_number = item[item.find('[')+1:item.find(']')]        
+            #print 'accession_number => ' + accession_number    
+            line = readQueryFile1.readline()
+            
+        elif '(0008,103e) LO [' in line:    #series_description
+            item = line
+            series_description = item[item.find('[')+1:item.find(']')]        
+            #print 'series_description => ' + series_description
+            ListOfSeriesDescription.append(series_description)
+            line = readQueryFile1.readline()
+            
+        elif '(0020,000e) UI [' in line:    #series_uid
+            item = line
+            series_uid = item[item.find('[')+1:item.find(']')]        
+            #print 'series_uid => ' + series_uid
+            ListOfSeriesUID.append(series_uid)
+            line = readQueryFile1.readline()
+                    
+        elif '(0020,0011) IS [' in line:    #series_number
+            item = line
+            series_number = item[item.find('[')+1:item.find(']')]
+            series_number = series_number.rstrip()
+            series_number = series_number.lstrip()
+            ListOfSeriesID.append(series_number)
+            #print 'series_number => ' + series_number
+            
+            if(match == 0):  # first series so far
+                match = 1
+                print " \nAccessionN: %1s %2s %3s %4s %5s \n" % (accession_number, patient_name, patient_id, exam_date, exam_description)
+                print >> sout, " \nAccessionN: %1s %2s %3s %4s %5s \n" % (accession_number, patient_name, patient_id, exam_date, exam_description)
+                print " series: # %2s %3s %4s \n" % ('series_number', 'series_description', '(#Images)')
+                print >> sout, " series: # %2s %3s %4s \n" % ('series_number', 'series_description', '(#Images)')
+
+            line = readQueryFile1.readline()
+            
+        elif( (line.rstrip() == '--------') and (match == 1) ):
+        
+            print ' series %2d: %3d %4s' % (int(count), int(series_number), series_description)
+            print >> sout, ' series %2d: %3d %4s' % (int(count), int(series_number), series_description)
+            line = readQueryFile1.readline()
+            count += 1;
+        else:
+            line = readQueryFile1.readline()
+            
+    readQueryFile1.close()
+    sout.close()
+
+    ########################
+    os.chdir(str(data_loc)) 
+    IDser = 0
+    selListOfSeriesID = []
+    selListOfSeriesDescription = []
+    
+    for IDseries in ListOfSeriesID:
+        os.chdir(str(data_loc))
+        
+        # if ExamID folder doesn't exist create it    
+        os.chdir(str(StudyID))
+        os.chdir(str(AccessionN))
+        
+        if ( 'FSE T2' in ListOfSeriesDescription[IDser] or 'VIBRANT' in ListOfSeriesDescription[IDser]):
+            selListOfSeriesID.append( ListOfSeriesID[IDser] )
+            selListOfSeriesDescription.append( ListOfSeriesDescription[IDser] )
+        else:            
+            # remove series not needed
+            shutil.rmtree( ListOfSeriesID[IDser],  ignore_errors=True) 
+            
+        # Go back - go to next 
+        os.chdir(str(data_loc))    
+        IDser += 1
+        
+    ########## END PULL #######################################
+    return selListOfSeriesID, selListOfSeriesDescription
