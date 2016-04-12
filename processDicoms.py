@@ -17,10 +17,6 @@ from operator import itemgetter, attrgetter
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 import pandas as pd
 
-import gdcm
-import vtkgdcm
-import vtkgdcmPython
-
 
 """
 Compilation of functions

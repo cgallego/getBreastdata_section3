@@ -45,7 +45,7 @@ if __name__ == '__main__':
     file_ids = open(sys.argv[1],"r")
     file_ids.seek(0)
     line = file_ids.readline()
-    lesion_id = 296
+    lesion_id = 378
        
     while ( line ) : 
         # Get the line: Study#, DicomExam#
@@ -106,13 +106,16 @@ if __name__ == '__main__':
                     sel_procedure = 0
                     sel_procedure_date = []
                     for k in range(len(query.gtpathology)):
-                        prodateID = query.gtpathology.iloc[k]['proc.proc_dt_datetime']
-                        pro = datetime.datetime.strptime(prodateID.isoformat(),"%Y-%m-%d")
-                        img = datetime.datetime.strptime(redateID.isoformat(),"%Y-%m-%dT%H:%M:%S")
-                        # find the difference in days between procedure date and exam
-                        timdelta = pro-img
-                        days = timdelta.days
-                        sel_procedure_date.append(days)
+                        if( query.gtpathology.iloc[k]['proc.proc_side_int'] == query.nonmassreport.iloc[i]['finding.side_int'] ):
+                            prodateID = query.gtpathology.iloc[k]['proc.proc_dt_datetime']
+                            pro = datetime.datetime.strptime(prodateID.isoformat(),"%Y-%m-%d")
+                            img = datetime.datetime.strptime(redateID.isoformat(),"%Y-%m-%dT%H:%M:%S")
+                            # find the difference in days between procedure date and exam
+                            timdelta = pro-img
+                            days = timdelta.days
+                            sel_procedure_date.append(days)
+                        else:
+                            sel_procedure_date.append(9999)
                 
                     # if procedure posterior to imaging, save that
                     # if not find closest to exam available

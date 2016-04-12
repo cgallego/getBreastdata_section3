@@ -20,6 +20,7 @@ clinical_IP='142.76.62.102'
 clinical_port='104'
 
 data_loc='Y:/Breastdata'
+mha_data_loc ='Y:/Breastdata/mha'
 
 biomatrix_user='biomatrix_ruser_mri_cad'
 biomatrix_password='bi0matrix4mricadSTUDY'

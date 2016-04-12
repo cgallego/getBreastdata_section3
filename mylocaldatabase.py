@@ -152,7 +152,7 @@ class Nonmass_record(Base):
         self.finish_image_no_int = finish_image_no_int
         
     def __repr__(self):
-        return "<Nonmass_record(lesion_id='%s', DynSeries_id='%s', mri_nonmass_dist='%s', mri_nonmass_int_enh='%s')>" % (self.lesion_id, self.DynSeries_id, self.find_mri_nonmass_dist_int, self.find_mri_nonmass_int_enh_int)
+        return "<Nonmass_record(lesion_id='%s', DynSeries_id='%s', mri_nonmass_dist='%s', mri_nonmass_int_enh_int='%s')>" % (self.lesion_id, self.DynSeries_id, self.mri_nonmass_dist_int, self.mri_nonmass_int_enh_int)
 
 
 #  created a Foci_record mapping 
