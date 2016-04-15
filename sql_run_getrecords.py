@@ -45,7 +45,7 @@ if __name__ == '__main__':
     file_ids = open(sys.argv[1],"r")
     file_ids.seek(0)
     line = file_ids.readline()
-    lesion_id = 378
+    lesion_id = 748
        
     while ( line ) : 
         # Get the line: Study#, DicomExam#
@@ -122,8 +122,9 @@ if __name__ == '__main__':
                     sel_procedure_date = abs(array(sel_procedure_date))
                     print "Days between procedure and imaging = %d " % sel_procedure_date[sel_procedure_date == min(sel_procedure_date)][0]
                     sel_procedure = np.argmin(sel_procedure_date)
-                            
-                    newrecords.gtpathology_2DB(lesion_id, query.gtpathology.iloc[sel_procedure]  )
+                    
+                    if(sel_procedure_date[sel_procedure_date == min(sel_procedure_date)][0] != 9999):
+                        newrecords.gtpathology_2DB(lesion_id, query.gtpathology.iloc[sel_procedure]  )
             
                 lesion_id += 1
             
