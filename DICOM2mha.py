@@ -35,8 +35,8 @@ This script will
 ----------------------------------------------------------------------
 """
 
-def DICOM2mha(mha_data_loc, data_loc, StudyID, AccessionN, preDynSeries):
-    
+def DICOM2mha(path_rootFolder, mha_data_loc, data_loc, StudyID, AccessionN, preDynSeries):
+
     # perform conversion
     DicomDirectory = data_loc+os.sep+str(int(StudyID))+os.sep+AccessionN+os.sep+preDynSeries
     filename = str(int(StudyID))+'_'+AccessionN+'_'+preDynSeries
@@ -58,7 +58,11 @@ def DICOM2mha(mha_data_loc, data_loc, StudyID, AccessionN, preDynSeries):
     # equivalent of using pydicom to retrieve tag
     # (0008,0032) AT S Acquisition Time       # hh.mm.ss.frac
     # e.g ti = str(dicomInfo_series[0x0008,0x0032].value) 
-    if not os.path.exists( mha_data_loc+os.sep+filename+'@'+str(dicomInfo_series[0x0008,0x0032].value)+'.mha' ):
+    repeat=1
+    if not os.path.exists( mha_data_loc+os.sep+filename+'@'+str(dicomInfo_series[0x0008,0x0032].value)+'.mha' ) or repeat==1:
+        # ensure you're local
+        os.chdir(path_rootFolder)
+        
         cmd = 'dcm23d'+os.sep+'bin'+os.sep+'dcm23d.exe -i '+DicomDirectory+' -o '+mha_data_loc+' -n '+ filename +' -a'
         print '\n---- Begin conversion of ' + preDynSeries ;
         p1 = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
@@ -74,14 +78,13 @@ def DICOM2mha(mha_data_loc, data_loc, StudyID, AccessionN, preDynSeries):
             print '\n---- Begin conversion of ' + str(kthDynSeries) ;
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
             p.wait()
-    
     return 
             
             
 if __name__ == '__main__':
     # Get Root folder ( the directory of the script being run)
     path_rootFolder = os.path.dirname(os.path.abspath(__file__))
-    lesion_id = 1
+    lesion_id = 512
     
     while ( lesion_id ) :            
         #############################
@@ -105,7 +108,7 @@ if __name__ == '__main__':
         preDynSeries = dfnmlesion.iloc[0]['DynSeries_id']
             
         ## initialize query
-        DICOM2mha(mha_data_loc, data_loc, StudyID, AccessionN, preDynSeries)
+        DICOM2mha(path_rootFolder, mha_data_loc, data_loc, StudyID, AccessionN, preDynSeries)
         
         lesion_id += 1
             
@@ -113,6 +116,6 @@ if __name__ == '__main__':
         ## continue to next case
         print lesion_id
         
-        if lesion_id > 400:
+        if lesion_id > 185:
             lesion_id = []
         

@@ -1,4 +1,5 @@
 \checkdata
 \outcome
 \querydata
+\backups
 *.pyc

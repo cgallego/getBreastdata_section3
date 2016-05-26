@@ -219,7 +219,7 @@ class Query(object):
         self.Session.configure(bind=engine)  # once engine is available
         session = self.Session() #instantiate a Session
         
-        gtpathology=[]; self.gtpathology=[]; 
+        gtpathology=[]; dfgtpathology = []; 
         for cad, exam, finding, proc, patho in session.query(database_atExam.Cad_record, database_atExam.Exam_record, database_atExam.Exam_Finding, database_atlinkPatho.Procedure, database_atlinkPatho.Pathology).\
                      filter(database_atExam.Cad_record.pt_id==database_atExam.Exam_record.pt_id).\
                      filter(database_atExam.Exam_record.pt_exam_id==database_atExam.Exam_Finding.pt_exam_id).\
@@ -244,9 +244,10 @@ class Query(object):
                                "patho.pt_path_id",  "patho.histop_core_biopsy_benign_yn",  "patho.histop_other_txt",  "patho.histop_benign_bst_parenchyma_yn", 
                                "patho.histop_tp_isc_ductal_yn",  "patho.histop_tp_isc_other_txt",  "patho.in_situ_nucl_grade_int", 
                                "patho.histop_tp_ic_yn",  "patho.histop_tp_ic_other_txt",  "patho.histop_other_2_txt")
-           self.gtpathology = pd.DataFrame(data=array(gtpathology), columns=list(gtpathologyLabels))
+           dfgtpathology = pd.DataFrame(data=array(gtpathology), columns=list(gtpathologyLabels))
+        
     
-        return 
+        return dfgtpathology
         
         
     

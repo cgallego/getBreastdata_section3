@@ -8,13 +8,10 @@ import shlex, subprocess
 from numpy import *
 from scipy.io import loadmat, savemat
 import dicom
-import vtk
 import Tix
-import _mssql
-import pymssql
 from datetime import date
 from operator import itemgetter, attrgetter
-from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
+#from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 import pandas as pd
 
 
@@ -78,7 +75,7 @@ def ReadDicomfiles(abspath_PhaseID):
     FileNms_slices_stack = pd.DataFrame({'slices': FileNms_slices,
                                          'location': slices})
     
-    sorted_FileNms_slices_stack = FileNms_slices_stack.sort('location', ascending=1)        
+    sorted_FileNms_slices_stack = FileNms_slices_stack.sort_values(by='location')        
     
     return len_listSeries_files, sorted_FileNms_slices_stack
     

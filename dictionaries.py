@@ -6,10 +6,15 @@ Created on Thu Jan 17 10:33:35 2013
 # Modified by Cristina Gallego - April 26-2013
 """
 #computer-dependent variables, should be changed before use of code
-my_aet='IPL1'
+#my_aet='IPL1'
+#local_port='5006'
+#my_port='5006'
+#hostID = '142.76.26.129'
+
+my_aet='SMIALBCAD2'
 local_port='5006'
 my_port='5006'
-hostID = '142.76.26.129'
+hostID = '142.76.30.200'
 
 remote_aet='MRI_MARTEL'
 remote_IP='142.76.29.187'
@@ -19,8 +24,10 @@ clinical_aet="AS0SUNB"
 clinical_IP='142.76.62.102'
 clinical_port='104'
 
-data_loc='Y:/Breastdata'
-mha_data_loc ='Y:/Breastdata/mha'
+data_loc='Z:\\Cristina\\Section3\\Breastdata'
+mha_data_loc ='Z:\\Cristina\\Section3\\mha'
+DICOM_data_loc = 'Z:\\Cristina\\Section3\\Breastdata'
+snapshot_loc = 'Z:\\Cristina\\Section3\\processPatches\\snapshots'
 
 biomatrix_user='biomatrix_ruser_mri_cad'
 biomatrix_password='bi0matrix4mricadSTUDY'

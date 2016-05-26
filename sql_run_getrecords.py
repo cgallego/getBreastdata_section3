@@ -24,16 +24,17 @@ import pandas as pd
 
 import datetime
 import query_database
-from dictionaries import data_loc
+from dictionaries import data_loc, mha_data_loc
 
 import dcmtk_routines as dcmtk
 from add_newrecords import *
+from DICOM2mha import DICOM2mha
 
 """
 ----------------------------------------------------------------------
 This script will
 
-@ Copyright (C) Cristina Gallego, University of Toronto, 2013
+@ Copyright (C) Cristina Gallego, University of Toronto, 2016
 ----------------------------------------------------------------------
 """
             
@@ -45,7 +46,7 @@ if __name__ == '__main__':
     file_ids = open(sys.argv[1],"r")
     file_ids.seek(0)
     line = file_ids.readline()
-    lesion_id = 748
+    lesion_id = 1210
        
     while ( line ) : 
         # Get the line: Study#, DicomExam#
@@ -64,6 +65,15 @@ if __name__ == '__main__':
         ###### Querying
         #############################
         if foundflag:
+            # convert to mha
+            for idx, val in enumerate(Sdesc):
+                if('Sag VIBRANT MPH ' == val):
+                    preDynSeries_id = idx
+                    print val
+
+            preDynSeries = Sids[preDynSeries_id]
+            DICOM2mha(path_rootFolder, mha_data_loc, data_loc, StudyID, AccessionN, preDynSeries)
+            
             print "Executing SQL biomatrix connection..."
             # Format query StudyID
             if (len(StudyID) == 4 ): fStudyID=StudyID
@@ -84,7 +94,7 @@ if __name__ == '__main__':
             [is_mass, colLabelsmass, is_nonmass, colLabelsnonmass, is_foci, colLabelsfoci] = query.queryExamFindings(fStudyID, redateID)
             # query exam finding if procedure 
             # this return query.gtpathology
-            query.queryifProcedure(fStudyID, redateID)
+            gtpathology = query.queryifProcedure(fStudyID, redateID)
             
             #############################
             # Send record to db
@@ -102,12 +112,12 @@ if __name__ == '__main__':
 #                if(is_foci):
 #                    newrecords.foci_2DB(lesion_id, query.focireport.iloc[i], Sids, Sdesc  )
             
-                if(query.gtpathology):
+                if( len(gtpathology) > 0 ):
                     sel_procedure = 0
                     sel_procedure_date = []
-                    for k in range(len(query.gtpathology)):
-                        if( query.gtpathology.iloc[k]['proc.proc_side_int'] == query.nonmassreport.iloc[i]['finding.side_int'] ):
-                            prodateID = query.gtpathology.iloc[k]['proc.proc_dt_datetime']
+                    for k in range(len(gtpathology)):
+                        if( gtpathology.iloc[k]['proc.proc_side_int'] == query.nonmassreport.iloc[i]['finding.side_int'] ):
+                            prodateID = gtpathology.iloc[k]['proc.proc_dt_datetime']
                             pro = datetime.datetime.strptime(prodateID.isoformat(),"%Y-%m-%d")
                             img = datetime.datetime.strptime(redateID.isoformat(),"%Y-%m-%dT%H:%M:%S")
                             # find the difference in days between procedure date and exam
@@ -124,7 +134,7 @@ if __name__ == '__main__':
                     sel_procedure = np.argmin(sel_procedure_date)
                     
                     if(sel_procedure_date[sel_procedure_date == min(sel_procedure_date)][0] != 9999):
-                        newrecords.gtpathology_2DB(lesion_id, query.gtpathology.iloc[sel_procedure]  )
+                        newrecords.gtpathology_2DB(lesion_id, gtpathology.iloc[sel_procedure]  )
             
                 lesion_id += 1
             

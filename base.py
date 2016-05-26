@@ -14,7 +14,7 @@ from sqlalchemy.orm import sessionmaker
 Session = sessionmaker()
 engine = create_engine("postgresql+psycopg2://biomatrix_ruser_mri_cad:bi0matrix4mricadSTUDY@142.76.29.187/biomatrixdb_raccess_mri_cad")
 
-localengine = create_engine('sqlite:///C:\\Users\\windows\\Documents\\repoCode-local\\Section3\\getBreastdata\\miningBreastMRIdata.db', echo=False) # when querying local data
+localengine = create_engine('sqlite:///Z:\\Cristina\\Section3\\getBreastdata\\miningBreastMRIdata.db', echo=False) # when querying local data
 
 # later, we create the engine
 Base = declarative_base(engine)

@@ -325,3 +325,77 @@ class gtPathology_record(Base):
         
     def __repr__(self):
         return "<gtPathology_record(lesion_id='%s', pt_procedure_id='%s)>" % (self.lesion_id, self.pt_procedure_id)
+
+
+#  created a lesion_patch mapping 
+class lesion_patch(Base):
+    """Base for lesion_patch class using Declarative. for table lesion_patch
+    attributes:
+        self.lesion_id = lesion_id
+        ...
+        self.patch_diag1 = patch_diag1
+        self.patch_diag2 = patch_diag1   
+    """
+    __tablename__ = 'lesion_patch'
+    __table_args__ = {'autoload':True}
+    lesion_patch_id = Column(Integer, primary_key=True)
+    lesion_id = Column(Integer, ForeignKey('lesion.lesion_id'))
+        
+    def __init__(self, lesion_id, img_size, patch_size, centroid, patch_diag1, patch_diag2, patch_set):
+        self.lesion_id = lesion_id
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.centroid = centroid
+        self.patch_diag1 = patch_diag1
+        self.patch_diag2 = patch_diag2
+        self.patch_set = patch_set
+       
+        
+    def __repr__(self):
+        return "<lesion_patch(lesion_id='%s', patch_size='%s)>" % (self.lesion_id, self.patch_size)
+
+
+#  created a Annot_record mapping 
+class Annot_record(Base):
+    """Base for Annot_record class using Declarative. for table annotation
+    attributes:
+        self.lesion_id = lesion_id
+        self.AccessionNumber = AccessionNumber
+        self.SeriesDate = SeriesDate
+        self.SeriesNumber = SeriesNumber
+        self.SliceLocation = SliceLocation
+        self.SeriesDescription = SeriesDescription
+        self.PatientID = PatientID
+        self.StudyID = StudyID
+        self.note = note
+        self.xi_coord = xi_coord
+        self.yi_coord = yi_coord
+        self.xf_coord = xf_coord
+        self.yf_coord = yf_coord
+        self.SeriesInstanceUID = SeriesInstanceUID
+    """
+    __tablename__ = 'gtannotation'
+    __table_args__ = {'autoload':True}
+    annot_id = Column(Integer, primary_key=True)
+    lesion_id = Column(Integer, ForeignKey('lesion.lesion_id'))
+        
+    def __init__(self, lesion_id, AccessionNumber, SeriesDate, SeriesNumber, SliceLocation, SeriesDescription,
+                 PatientID, StudyID, SeriesInstanceUID, note, xi_coord, yi_coord, xf_coord, yf_coord):
+        self.lesion_id = lesion_id
+        self.AccessionNumber = AccessionNumber
+        self.SeriesDate = SeriesDate
+        self.SeriesNumber = SeriesNumber
+        self.SliceLocation = SliceLocation
+        self.SeriesDescription = SeriesDescription
+        self.PatientID = PatientID
+        self.StudyID = StudyID
+        self.SeriesInstanceUID = SeriesInstanceUID
+        self.note = note
+        self.xi_coord = xi_coord
+        self.yi_coord = yi_coord
+        self.xf_coord = xf_coord
+        self.yf_coord = yf_coord
+        
+        
+    def __repr__(self):
+        return "<Annot_record(lesion_id='%s', PatientID='%s', StudyID='%s', note='%s', xi_coord='%s, yi_coord='%s', xf_coord='%s', yf_coord='%s')>" % (self.lesion_id, self.PatientID, self.StudyID, self.note, self.xi_coord, self.yi_coord, self.xf_coord, self.yf_coord)
